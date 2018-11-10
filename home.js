@@ -64,7 +64,7 @@ $(document).ready(function () {
                 var secondActorResults = $.grep(movieData, function (n, i) {
                     return (n.actors.includes(secondActorId));
                 });
-
+                console.log(movieData);
                 console.log(firstActorResults);
                 console.log("firstActorResults");
                 console.log(secondActorResults);
@@ -86,12 +86,12 @@ $(document).ready(function () {
 
                 // goes through the first actors supporting cast list and removes any duplicates
                 $.each(firstActorList, function (i, el) {
-                    if ($.inArray(el, uniqueFirstActorList) === -1) uniqueFirstActorList.push(el);
+                    if ($.inArray(el, uniqueFirstActorList) === -1) { uniqueFirstActorList.push(el) };
                 });
 
                 // goes through the second actors supporting cast list and removes any duplicates
                 $.each(secondActorList, function (i, el) {
-                    if ($.inArray(el, uniqueSecondActorList) === -1) uniqueSecondActorList.push(el);
+                    if ($.inArray(el, uniqueSecondActorList) === -1) { uniqueSecondActorList.push(el) };
                 });
 
                 // console logs both new lists with no duplicates
@@ -127,28 +127,75 @@ $(document).ready(function () {
                 });
 
                 // takes the names of supporting actors who worked with both and converts it into a JSON object to send back for validation. has to be a JSON object.
+
+
+
+                actorsInBoth.sort(function (a, b) {
+                    // compare lastname part for sorting
+                    return a.split(' ')[1].localeCompare(b.split(' ')[1]);
+                })
+
+
                 var obj = [];
                 for (i = 0; i < actorsInBoth.length; i++) {
-                    var id = actorsInBoth[i];
+                    var IdSearch = actors.find(actors => actors.name.toLowerCase() === actorsInBoth[i].toLowerCase()).actorId;
+
+                    // var movieTitleNC = movieData.find(movieData => movieData.actors.includes(IdSearch) && movieData.actors.includes(firstActorId)).title;
+                    // var movieTitleKR = movieData.find(movieData => movieData.actors.includes(IdSearch) && movieData.actors.includes(secondActorId)).title;
+
+                    var movieTitleNC = $.grep(movieData, function (n, i) {
+                        return (n.actors.includes(firstActorId) && n.actors.includes(IdSearch));
+                    });
+
+                    var movieTitleKR = $.grep(movieData, function (n, i) {
+                        return (n.actors.includes(secondActorId) && n.actors.includes(IdSearch));
+                    });
+
+                    var movieListKR = $(movieTitleKR).map(function (j) {
+
+                        return movieTitleKR[j].title;
+                    }).get();
+
+                    var movieListNC = $(movieTitleNC).map(function (j) {
+
+                        return movieTitleNC[j].title;
+                    }).get();
+
+                    movieListKR.sort();
+                    movieListNC.sort();
+
+                    console.log(IdSearch)
+                    console.log(movieTitleNC);
+                    console.log(movieTitleKR);
+
+                    var name = actorsInBoth[i];
                     tmp = {
-                        'Name': id
+                        'Name': name,
+                        "KRMovies": movieListKR,
+                        "NCMovies": movieListNC
                     };
 
                     obj.push(tmp);
                 }
                 console.log(obj);
                 //makes the ajax post to chmuras server to check if the list of names is correct
-                $.ajax({
 
-                    type: "POST",
-                    headers: {
-                        "x-chmura-cors": '71AF6778-1F0C-48DF-B54B-0413EE269626',
-                    },
+                $.ajax({
+                    contentType: "application/json; charset=utf-8",
+                    dataType: 'json',
+                    method: 'POST',
                     url: validationQuery,
+                    headers: {"x-chmura-cors": '71AF6778-1F0C-48DF-B54B-0413EE269626'},
                     data: JSON.stringify(obj),
-                    dataType: "jsonp"
-                }).done(function (data) {
-                });
+                    processData: false,
+
+                    success: function(data){
+                        console.log(data)
+                    }
+                  });
+
+
+      
                 // closing brackets for second ajax call, list of movies
             });
             //closing brakects for first ajax call, list of actors
